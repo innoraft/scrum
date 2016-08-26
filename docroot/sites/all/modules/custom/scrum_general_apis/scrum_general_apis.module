@@ -43,34 +43,34 @@ function scrum_general_apis_menu() {
   return $items;
 }
 
-/**
- * Implements hook_node_validate().
- */
-function scrum_general_apis_node_validate($node, $form, &$form_state) {
-  $type = is_string($node) ? $node : $node->type;
-  if ($type == 'ct_scrum') {
-    $uid = $node->uid;
-    $query = db_select('node', 'n')
-    ->fields('n', array('created'))
-    ->condition('status', 1,'=')
-    //->condition('uid', $uid,'=')
-    ->condition('type', 'ct_scrum','=')
-    ->orderBy('created', 'DESC')
-    ->range(0,1)
-    ->execute()
-    ->fetchAssoc();
+// /**
+//  * Implements hook_node_validate().
+//  */
+// function scrum_general_apis_node_validate($node, $form, &$form_state) {
+//   $type = is_string($node) ? $node : $node->type;
+//   if ($type == 'ct_scrum') {
+//     $uid = $node->uid;
+//     $query = db_select('node', 'n')
+//     ->fields('n', array('created'))
+//     ->condition('status', 1,'=')
+//     //->condition('uid', $uid,'=')
+//     ->condition('type', 'ct_scrum','=')
+//     ->orderBy('created', 'DESC')
+//     ->range(0,1)
+//     ->execute()
+//     ->fetchAssoc();
 
-    if (!empty($query)) {
-      $last_node_created_date = $query['created'];
-      $last_node_created_date = date('d-m-y', $last_node_created_date);
-      $today_date = date('d-m-y');
-      if ($last_node_created_date == $today_date) {
-        $errormessage = t('Sorry, you have created scrum for today');
-        form_set_error('time', $errormessage);
-      }
-    }
-  }
-}
+//     if (!empty($query)) {
+//       $last_node_created_date = $query['created'];
+//       $last_node_created_date = date('d-m-y', $last_node_created_date);
+//       $today_date = date('d-m-y');
+//       if ($last_node_created_date == $today_date) {
+//         $errormessage = t('Sorry, you have created scrum for today');
+//         form_set_error('time', $errormessage);
+//       }
+//     }
+//   }
+// }
 
 // /**
 //  * Implements hook_cron().
