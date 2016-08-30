@@ -43,34 +43,88 @@ function scrum_general_apis_menu() {
   return $items;
 }
 
-// /**
-//  * Implements hook_node_validate().
-//  */
-// function scrum_general_apis_node_validate($node, $form, &$form_state) {
-//   $type = is_string($node) ? $node : $node->type;
-//   if ($type == 'ct_scrum') {
-//     $uid = $node->uid;
-//     $query = db_select('node', 'n')
-//     ->fields('n', array('created'))
-//     ->condition('status', 1,'=')
-//     //->condition('uid', $uid,'=')
-//     ->condition('type', 'ct_scrum','=')
-//     ->orderBy('created', 'DESC')
-//     ->range(0,1)
-//     ->execute()
-//     ->fetchAssoc();
+/**
+ * Implements hook_node_validate().
+ */
+function scrum_general_apis_node_validate($node, $form, &$form_state) {
+  global $user;
 
-//     if (!empty($query)) {
-//       $last_node_created_date = $query['created'];
-//       $last_node_created_date = date('d-m-y', $last_node_created_date);
-//       $today_date = date('d-m-y');
-//       if ($last_node_created_date == $today_date) {
-//         $errormessage = t('Sorry, you have created scrum for today');
-//         form_set_error('time', $errormessage);
-//       }
-//     }
-//   }
-// }
+  $type = is_string($node) ? $node : $node->type;
+  if ($type == 'ct_scrum' && is_null($node->nid)) {
+
+    $tid = $node->field_ct_scrum['und'][0]['tid'];
+    $start = date('U', mktime(0, 0, 0, date('n'), date('j'), date('Y')));
+    $end = date('U', mktime(23, 59, 59, date('n'), date('j'), date('Y')));
+
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'ct_scrum')
+    ->propertyCondition('status', NODE_PUBLISHED)
+    ->fieldCondition('field_ct_scrum', 'tid', $tid)
+    ->range(0, 1)
+    ->propertyCondition('created', array($start, $end), "between")
+    ->execute();
+
+    if (!empty($result)) {
+      $errormessage = t('Sorry, you have created scrum for today');
+      form_set_error('time', $errormessage);
+    }
+  }
+  else {
+    $roles = $user->roles;
+    if (!in_array('administrator', $roles)) {
+      $created_date = $node->created;
+      $created_date = date('Y-m-d', $created_date);
+      $created_date = new DateTime($created_date);
+
+      $today_date = date('Y-m-d');
+      $today_date = new DateTime($today_date);
+
+
+      $diff = $today_date->diff($created_date)->format("%a");
+
+      if ($diff > 0) {
+        $errormessage = t('Sorry, you can not update previous scrums');
+        form_set_error('time', $errormessage);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function scrum_general_apis_form_node_form_alter(&$form, &$form_state) {
+
+  global $user;
+  $roles = $user->roles;
+  if (!in_array('administrator', $roles)) {
+
+    $uid = $form['uid']['#value'];
+    $scrum_vocab = taxonomy_vocabulary_machine_name_load('vocab_scrum');
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'taxonomy_term')
+    ->propertyCondition('vid', $scrum_vocab->vid)
+    ->propertyOrderBy('weight')
+    ->fieldCondition('field_ct_status', 'value', 1)
+    ->fieldCondition('field_ct_scrum_master', 'target_id', $uid)
+    ->execute();
+    if (!empty($result) && isset($result['taxonomy_term'])) {
+      $tids = array_keys($result['taxonomy_term']);
+      $tids = array_flip($tids);
+      $options = $form['field_ct_scrum']['und']['#options'];
+      $result = array_intersect_key($options, $tids);
+      $form['field_ct_scrum']['und']['#options'] = $result;
+    }
+    else {
+      $result = array();
+      $form['field_ct_scrum']['und']['#options'] = $result;
+      $errormessage = t('Sorry, Right now you are not scrum manager of any scrum');
+      form_set_error('time', $errormessage);
+    }
+  }
+}
+
 
 // /**
 //  * Implements hook_cron().
