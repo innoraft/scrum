@@ -126,100 +126,94 @@ function scrum_general_apis_form_node_form_alter(&$form, &$form_state) {
 }
 
 
-// /**
-//  * Implements hook_cron().
-//  */
-// function scrum_general_apis_cron() {
-//   $scrum_time = variable_get('scrum_mail_time', 18);
-//   $current_time = date('G');
-//   if ($scrum_time == $current_time) {
+/**
+ * Implements hook_cron().
+ */
+function scrum_general_apis_cron() {
+  $scrum_time = variable_get('scrum_mail_time', 18);
+  $current_time = date('G');
+  if ($scrum_time == $current_time) {
 
-//     // Get all active scrums.
-//     if ($scrum_vocab = taxonomy_vocabulary_machine_name_load('vocab_scrum')) {
-//       $query = new EntityFieldQuery();
-//       $result = $query->entityCondition('entity_type', 'taxonomy_term')
-//       ->propertyCondition('vid', $scrum_vocab->vid)
-//       ->propertyOrderBy('weight')
-//       ->fieldCondition('field_ct_status', 'value', 1)
-//       ->execute();
+    // Get all active scrums.
+    if ($scrum_vocab = taxonomy_vocabulary_machine_name_load('vocab_scrum')) {
+      $query = new EntityFieldQuery();
+      $result = $query->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $scrum_vocab->vid)
+      ->propertyOrderBy('weight')
+      ->fieldCondition('field_ct_status', 'value', 1)
+      ->execute();
 
-//       if (!empty($result) && isset($result['taxonomy_term'])) {
-//         $tids = array_keys($result['taxonomy_term']);
+      if (!empty($result) && isset($result['taxonomy_term'])) {
+        $tids = array_keys($result['taxonomy_term']);
 
-//         // Get current date scrum for every project.
-//         $exclude_tids = array();
-//         if (!empty($tids)) {
-//           $start = date('U', mktime(0, 0, 0, date('n'), date('j'), date('Y')));
-//           $end = date('U', mktime(23, 59, 59, date('n'), date('j'), date('Y')));
-//           foreach ($tids as $tid) {
-//             $query = new EntityFieldQuery();
-//             $result = $query->entityCondition('entity_type', 'node')
-//             ->entityCondition('bundle', 'ct_scrum')
-//             ->propertyCondition('status', NODE_PUBLISHED)
-//             ->fieldCondition('field_ct_scrum', 'tid', $tid)
-//             ->range(0, 1)
-//             ->propertyCondition('created', array($start, $end), "between")
-//             ->execute();
+        // Get current date scrum for every project.
+        $exclude_tids = array();
+        if (!empty($tids)) {
+          $start = date('U', mktime(0, 0, 0, date('n'), date('j'), date('Y')));
+          $end = date('U', mktime(23, 59, 59, date('n'), date('j'), date('Y')));
+          foreach ($tids as $tid) {
+            $query = new EntityFieldQuery();
+            $result = $query->entityCondition('entity_type', 'node')
+            ->entityCondition('bundle', 'ct_scrum')
+            ->propertyCondition('status', NODE_PUBLISHED)
+            ->fieldCondition('field_ct_scrum', 'tid', $tid)
+            ->range(0, 1)
+            ->propertyCondition('created', array($start, $end), "between")
+            ->execute();
 
-//             if (empty($result)) {
-//               $exclude_tids[] = $tid;
-//             }
-//           }
+            if (empty($result)) {
+              $exclude_tids[] = $tid;
+            }
+          }
 
-//           if (!empty($exclude_tids)) {
-//             $terms = taxonomy_term_load_multiple($exclude_tids);
-//             $mail_ids = array();
-//             foreach ($terms as $term) {
-//               $user_id = field_get_items('taxonomy_term', $term, 'field_ct_scrum_master');
-//               if (isset($user_id[0]['target_id'])) {
-//                 $uid = $user_id[0]['target_id'];
-//                 $user = user_load($uid);
-//                 $mail_ids[] = isset($user->mail) ? $user->mail : NULL;
-//               }
-//             }
-//             if (!empty($mail_ids)) {
-//               $mail_to =  implode(',', $mail_ids);
-//               $from = variable_get('site_mail', '');
-//               watchdog("mail", $mail_to);
-//               $to = $mail_to;
-//               $ln = language_list();
-//               $from = $from;
-//               $language = $ln['en'];
-//               $params['subject'] = variable_get('scrum_mail_subject', 'Create you scrum');
-//               $body = variable_get('scrum_mail_body', "Please create today's scrum");
-//               $params['body'][] = $body;
-//               $mail_cc = variable_get('scrum_mail_cc', 'mukesh.agarwal@innoraft.com,basant.sharma@innoraft.com');
-//               $params['headers'] = array(
-//                 'Cc' => $mail_cc,
-//                 'MIME-Version' => '1.0',
-//                 'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
-//               );
+          if (!empty($exclude_tids)) {
+            $terms = taxonomy_term_load_multiple($exclude_tids);
+            $mail_ids = array();
+            foreach ($terms as $term) {
+              $user_id = field_get_items('taxonomy_term', $term, 'field_ct_scrum_master');
+              if (isset($user_id[0]['target_id'])) {
+                $uid = $user_id[0]['target_id'];
+                $user = user_load($uid);
+                $mail_ids[] = isset($user->mail) ? $user->mail : NULL;
+              }
+            }
+            if (!empty($mail_ids)) {
+              $mail_ids = array_unique($mail_ids);
+              $mail_to =  implode(',', $mail_ids);
+              $from = variable_get('site_mail', '');
+              $to = $mail_to;
+              $ln = language_list();
+              $from = $from;
+              $language = $ln['en'];
+              $params['subject'] = variable_get('scrum_mail_subject', 'Create you scrum');
+              $body = variable_get('scrum_mail_body', "Please create today's scrum");
+              $params['body'][] = $body;
+              $mail_cc = variable_get('scrum_mail_cc', 'mukesh.agarwal@innoraft.com,basant.sharma@innoraft.com');
+              $params['headers'] = array(
+                'Cc' => $mail_cc,
+                'MIME-Version' => '1.0',
+                'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
+              );
 
-//               watchdog("CRM", '<pre>' . print_r($params,TRUE) . '</pre>');
+              drupal_mail('scrum_general_apis', 'scrum_mail_key', $to, $language, $params, $from, TRUE);
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
-
-
-
-//               drupal_mail('scrum_general_apis', 'scrum_mail_key', $to, $language, $params, $from, TRUE);
-//             }
-//           }
-//         }
-//       }
-//     }
-//   }
-// }
-
-// /**
-//  * Implements hook_mail().
-//  */
-// function scrum_general_apis_mail($key, &$message, $params) {
-//   watchdog("message", '<pre>' . print_r($message,TRUE) . '</pre>');
-//   if (isset($params['headers'])) {
-//     $message['headers'] += $params['headers'];
-//   }
-//   if ($key == 'scrum_mail_key') {
-//     $message['subject'] = $params['subject'];
-//     $message['body'] = $params['body'];
-//   }
-// }
+/**
+ * Implements hook_mail().
+ */
+function scrum_general_apis_mail($key, &$message, $params) {
+  if (isset($params['headers'])) {
+    $message['headers'] += $params['headers'];
+  }
+  if ($key == 'scrum_mail_key') {
+    $message['subject'] = $params['subject'];
+    $message['body'] = $params['body'];
+  }
+}
 
