@@ -191,7 +191,7 @@ function scrum_general_apis_cron() {
                 $ln = language_list();
                 $from = $from;
                 $language = $ln['en'];
-                $params['subject'] = variable_get('scrum_mail_subject', 'Create you scrum');
+                $params['subject'] = $value['project_name'] . ' -  Scrum Not Done';
 
                 $scrum_template = theme('scrum_mail_template', array('data' => $value));
                 $params['body'][0] = $scrum_template;
