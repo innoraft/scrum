@@ -169,33 +169,41 @@ function scrum_general_apis_cron() {
           if (!empty($exclude_tids)) {
             $terms = taxonomy_term_load_multiple($exclude_tids);
             $mail_ids = array();
+            $scrum_mail_detail = array();
             foreach ($terms as $term) {
               $user_id = field_get_items('taxonomy_term', $term, 'field_ct_scrum_master');
+              $scrum_mail_detail[$term->tid]['project_name'] = $term->name;
+
               if (isset($user_id[0]['target_id'])) {
                 $uid = $user_id[0]['target_id'];
                 $user = user_load($uid);
                 $mail_ids[] = isset($user->mail) ? $user->mail : NULL;
+                $scrum_mail_detail[$term->tid]['email'] = isset($user->mail) ? $user->mail : NULL;
+                $scrum_mail_detail[$term->tid]['scrum_master'] = isset($user->name) ? $user->name : NULL;
               }
             }
-            if (!empty($mail_ids)) {
-              $mail_ids = array_unique($mail_ids);
-              $mail_to =  implode(',', $mail_ids);
-              $from = variable_get('site_mail', '');
-              $to = $mail_to;
-              $ln = language_list();
-              $from = $from;
-              $language = $ln['en'];
-              $params['subject'] = variable_get('scrum_mail_subject', 'Create you scrum');
-              $body = variable_get('scrum_mail_body', "Please create today's scrum");
-              $params['body'][] = $body;
-              $mail_cc = variable_get('scrum_mail_cc', 'mukesh.agarwal@innoraft.com,basant.sharma@innoraft.com');
-              $params['headers'] = array(
-                'Cc' => $mail_cc,
-                'MIME-Version' => '1.0',
-                'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
-              );
 
-              drupal_mail('scrum_general_apis', 'scrum_mail_key', $to, $language, $params, $from, TRUE);
+            foreach ($scrum_mail_detail as $key => $value) {
+              $mail_to = isset($value['email']) ? $value['email'] : NULL;
+              if (!is_null($mail_to)) {
+                $from = variable_get('site_mail', '');
+                $to = $mail_to;
+                $ln = language_list();
+                $from = $from;
+                $language = $ln['en'];
+                $params['subject'] = variable_get('scrum_mail_subject', 'Create you scrum');
+
+                $scrum_template = theme('scrum_mail_template', array('data' => $value));
+                $params['body'][] = $scrum_template;
+                $mail_cc = variable_get('scrum_mail_cc', 'mukesh.agarwal@innoraft.com,basant.sharma@innoraft.com');
+                $params['headers'] = array(
+                  'Cc' => $mail_cc,
+                  'MIME-Version' => '1.0',
+                  'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
+                );
+
+                drupal_mail('scrum_general_apis', 'scrum_mail_key', $to, $language, $params, $from, TRUE);
+              }
             }
           }
         }
@@ -217,3 +225,15 @@ function scrum_general_apis_mail($key, &$message, $params) {
   }
 }
 
+
+/**
+ * Implements hook_theme().
+ */
+function scrum_general_apis_theme($existing, $type, $theme, $path) {
+  return array(
+    'scrum_mail_template' => array(
+      'variables' => array('data' => NULL),
+      'template' => 'scrum-mail-template',
+    ),
+  );
+}
