@@ -194,7 +194,7 @@ function scrum_general_apis_cron() {
                 $params['subject'] = variable_get('scrum_mail_subject', 'Create you scrum');
 
                 $scrum_template = theme('scrum_mail_template', array('data' => $value));
-                $params['body'][] = $scrum_template;
+                $params['body'][0] = $scrum_template;
                 $mail_cc = variable_get('scrum_mail_cc', 'mukesh.agarwal@innoraft.com,basant.sharma@innoraft.com');
                 $params['headers'] = array(
                   'Cc' => $mail_cc,
