@@ -224,30 +224,29 @@ function scrum_send_mail_for_bad_scrum($tids) {
 
         $scrum_mail_detail[$term->tid]['project_status'] = $name;
         $scrum_mail_detail[$term->tid]['summary'] = $summary;
+        $scrum_mail_detail[$term->tid]['date'] = date('d-M-y', $node->created);
       }
 
+      $scrum_template = theme('scrum_mail_template_bad_status', array('data' => $scrum_mail_detail));
 
-      foreach ($scrum_mail_detail as $key => $value) {
-        $mail_to = isset($value['email']) ? $value['email'] : NULL;
-        if (!is_null($mail_to)) {
-          $from = variable_get('site_mail', '');
-          $to = $mail_to;
-          $ln = language_list();
-          $from = $from;
-          $language = $ln['en'];
-          $params['subject'] = 'Project status';
+      $mail_to = 'basant.sharma@innoraft.com';
+      if (!is_null($mail_to)) {
+        $from = variable_get('site_mail', '');
+        $to = $mail_to;
+        $ln = language_list();
+        $from = $from;
+        $language = $ln['en'];
+        $params['subject'] = 'Project status';
 
-          $scrum_template = theme('scrum_mail_template_bad_status', array('data' => $value));
-          $params['body'][0] = $scrum_template;
-          $mail_cc = variable_get('scrum_mail_cc', 'mukesh.agarwal@innoraft.com,basant.sharma@innoraft.com');
-          $params['headers'] = array(
-            'Cc' => $mail_cc,
-            'MIME-Version' => '1.0',
-            'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
-          );
+        $params['body'][0] = $scrum_template;
+        $mail_cc = variable_get('scrum_mail_cc', 'mukesh.agarwal@innoraft.com,basant.sharma@innoraft.com');
+        $params['headers'] = array(
+          'Cc' => $mail_cc,
+          'MIME-Version' => '1.0',
+          'Content-Type' => 'text/html; charset=UTF-8; format=flowed',
+        );
 
-          drupal_mail('scrum_general_apis', 'scrum_mail_key', $to, $language, $params, $from, TRUE);
-        }
+        drupal_mail('scrum_general_apis', 'scrum_mail_key', $to, $language, $params, $from, TRUE);
       }
     }
   }
